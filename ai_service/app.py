@@ -19,8 +19,7 @@ CORS(app)
 # --- Configuration ---
 MONGO_URI = os.getenv("MONGO_URI")
 if not MONGO_URI:
-    # Fallback for local dev if .env is missing (or raise error)
-    MONGO_URI = "mongodb+srv://civiceye:civiceye@database1.xdbd7kv.mongodb.net/?appName=database1"
+    raise ValueError("No MONGO_URI found in environment variables") 
 
 client = MongoClient(MONGO_URI, tlsCAFile=certifi.where())
 db = client['civic_eye_db']
