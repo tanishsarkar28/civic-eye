@@ -9,6 +9,7 @@ from bson.objectid import ObjectId
 
 from dotenv import load_dotenv
 import os
+import certifi
 
 load_dotenv()
 
@@ -21,7 +22,7 @@ if not MONGO_URI:
     # Fallback for local dev if .env is missing (or raise error)
     MONGO_URI = "mongodb+srv://civiceye:civiceye@database1.xdbd7kv.mongodb.net/?appName=database1"
 
-client = MongoClient(MONGO_URI)
+client = MongoClient(MONGO_URI, tlsCAFile=certifi.where())
 db = client['civic_eye_db']
 issues_collection = db['issues']
 

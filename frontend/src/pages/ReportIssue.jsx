@@ -164,7 +164,7 @@ const ReportIssue = () => {
                                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
                                             </svg>
                                         </div>
-                                        <h3 className="text-lg font-semibold text-slate-700">Tap to upload photo</h3>
+                                        <h3 className="text-lg font-semibold text-slate-700">Tap to open camera</h3>
                                         <p className="text-slate-400 text-sm mt-1">or select from gallery</p>
                                     </div>
                                 )}
