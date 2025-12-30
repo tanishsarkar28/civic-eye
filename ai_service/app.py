@@ -21,7 +21,8 @@ MONGO_URI = os.getenv("MONGO_URI")
 if not MONGO_URI:
     raise ValueError("No MONGO_URI found in environment variables") 
 
-client = MongoClient(MONGO_URI, tlsCAFile=certifi.where())
+# Adding tlsAllowInvalidCertificates=True to bypass strict SSL errors on Render/Python 3.13
+client = MongoClient(MONGO_URI, tlsCAFile=certifi.where(), tlsAllowInvalidCertificates=True)
 db = client['civic_eye_db']
 issues_collection = db['issues']
 
