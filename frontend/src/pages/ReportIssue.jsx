@@ -194,7 +194,11 @@ const ReportIssue = () => {
                                     </div>
                                 </div>
                                 <p className="text-xs text-slate-400 ml-1">
-                                    {category ? "AI suggestion applied. Check ensuring correctness." : "Waiting for image..."}
+                                    {aiConfidence 
+                                        ? "AI is analyzing the image..." 
+                                        : category 
+                                            ? "AI suggestion applied. Check ensuring correctness." 
+                                            : "AI could not identify the category. Please select one manually."}
                                 </p>
                             </div>
                         )}

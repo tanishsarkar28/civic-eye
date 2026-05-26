@@ -9,7 +9,7 @@ const Login = () => {
     const handleLogin = (e) => {
         e.preventDefault();
         // Hardcoded simple auth for prototype
-        if (password === 'admin123') {
+        if (password === '123') {
             sessionStorage.setItem('isAdmin', 'true');
             navigate('/admin');
         } else {

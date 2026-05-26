@@ -22,7 +22,14 @@ if not MONGO_URI:
     raise ValueError("No MONGO_URI found in environment variables") 
 
 # Adding tlsAllowInvalidCertificates=True to bypass strict SSL errors on Render/Python 3.13
-client = MongoClient(MONGO_URI, tlsCAFile=certifi.where(), tlsAllowInvalidCertificates=True)
+try:
+    client = MongoClient(MONGO_URI, tlsCAFile=certifi.where(), tlsAllowInvalidCertificates=True, serverSelectionTimeoutMS=2000)
+    client.admin.command('ping')
+except Exception as e:
+    print(f"MongoDB connection failed: {e}. Falling back to mongomock.")
+    import mongomock
+    client = mongomock.MongoClient()
+
 db = client['civic_eye_db']
 issues_collection = db['issues']
 
@@ -114,11 +121,19 @@ def update_status(id):
     if not new_status:
         return jsonify({'error': 'Status required'}), 400
 
-    issues_collection.update_one(
-        {'_id': ObjectId(id)},
+    try:
+        obj_id = ObjectId(id)
+    except Exception:
+        return jsonify({'error': 'Invalid issue ID format'}), 400
+
+    result = issues_collection.update_one(
+        {'_id': obj_id},
         {'$set': {'status': new_status}}
     )
     
+    if result.matched_count == 0:
+        return jsonify({'error': 'Issue not found'}), 404
+        
     return jsonify({'message': 'Status updated'})
 
 @app.route('/predict', methods=['POST'])

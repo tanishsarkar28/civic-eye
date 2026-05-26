@@ -1,14 +1,18 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 
 const Navbar = () => {
     const location = useLocation();
     const [scrolled, setScrolled] = useState(false);
 
-    // Simple scroll effect
-    window.addEventListener('scroll', () => {
-        setScrolled(window.scrollY > 20);
-    });
+    // Simple scroll effect with clean-up
+    useEffect(() => {
+        const handleScroll = () => {
+            setScrolled(window.scrollY > 20);
+        };
+        window.addEventListener('scroll', handleScroll);
+        return () => window.removeEventListener('scroll', handleScroll);
+    }, []);
 
     return (
         <nav className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${scrolled ? 'py-2 sm:py-4' : 'py-3 sm:py-6'}`}>

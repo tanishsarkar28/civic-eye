@@ -1,27 +1,57 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
 import L from 'leaflet';
 
-// Fix for default marker icon
-import icon from 'leaflet/dist/images/marker-icon.png';
-import iconShadow from 'leaflet/dist/images/marker-shadow.png';
+// Function to create a beautiful custom SVG marker using Tailwind CSS
+const createCustomIcon = (status, isSelected) => {
+    const colorClass = status === 'Resolved' ? 'bg-emerald-500 ring-emerald-100' : 'bg-rose-500 ring-rose-100';
+    const borderClass = isSelected 
+        ? 'ring-4 ring-indigo-400 scale-125 z-[1000]' 
+        : 'ring-2 ring-white hover:scale-110';
+    
+    const iconLetter = status === 'Resolved' ? '✓' : '!';
 
-let DefaultIcon = L.icon({
-    iconUrl: icon,
-    shadowUrl: iconShadow,
-    iconSize: [25, 41],
-    iconAnchor: [12, 41]
-});
-L.Marker.prototype.options.icon = DefaultIcon;
+    return L.divIcon({
+        className: 'custom-div-icon',
+        html: `
+            <div class="relative flex items-center justify-center w-8 h-8 rounded-full ${colorClass} ${borderClass} transition-all duration-300 shadow-lg text-white font-bold text-sm">
+                <span>${iconLetter}</span>
+                <div class="absolute -bottom-1 left-1/2 -translate-x-1/2 w-2 h-2 ${status === 'Resolved' ? 'bg-emerald-500' : 'bg-rose-500'} rotate-45"></div>
+            </div>
+        `,
+        iconSize: [32, 32],
+        iconAnchor: [16, 32],
+        popupAnchor: [0, -32]
+    });
+};
 
-// Child component to handle map flyTo
-const MapController = ({ center }) => {
+// Child component to handle map flyTo and initial centering
+const MapController = ({ selectedLocation, selectedId, initialCenter }) => {
     const map = useMap();
+    const hasCenteredRef = useRef(false);
+
+    // Destructure primitive values to satisfy react-hooks/exhaustive-deps
+    const initialLat = initialCenter ? initialCenter[0] : null;
+    const initialLng = initialCenter ? initialCenter[1] : null;
+
+    const selectedLat = selectedLocation?.lat;
+    const selectedLng = selectedLocation?.lng;
+
+    // Centering on first issue load once
     useEffect(() => {
-        if (center) {
-            map.flyTo(center, 14, { duration: 2 });
+        if (initialLat !== null && initialLng !== null && !hasCenteredRef.current) {
+            map.setView([initialLat, initialLng], 13);
+            hasCenteredRef.current = true;
         }
-    }, [center, map]);
+    }, [initialLat, initialLng, map]);
+
+    // Flying to selected issue
+    useEffect(() => {
+        if (selectedLat !== undefined && selectedLng !== undefined) {
+            map.flyTo([selectedLat, selectedLng], 14, { duration: 2 });
+        }
+    }, [selectedId, selectedLat, selectedLng, map]);
+
     return null;
 };
 
@@ -32,18 +62,17 @@ const AdminDashboard = () => {
     const [showIssues, setShowIssues] = useState(false);
     const [statusFilter, setStatusFilter] = useState(null); // 'Pending' | 'Resolved' | null
 
-    const fetchIssues = async () => {
-        try {
-            const response = await fetch(`${import.meta.env.VITE_API_URL}/issues`);
-            const data = await response.json();
-            setIssues(data);
-        } catch (error) {
-            console.error("Error fetching issues:", error);
-        }
-        setLoading(false);
-    };
-
     useEffect(() => {
+        const fetchIssues = async () => {
+            try {
+                const response = await fetch(`${import.meta.env.VITE_API_URL}/issues`);
+                const data = await response.json();
+                setIssues(data);
+            } catch (error) {
+                console.error("Error fetching issues:", error);
+            }
+            setLoading(false);
+        };
         fetchIssues();
     }, []);
 
@@ -93,8 +122,14 @@ const AdminDashboard = () => {
     const displayIssues = getJitteredIssues(issues);
     const selectedIssue = displayIssues.find(i => i._id === selectedIssueId);
 
-    const mapCenter = selectedIssue
-        ? [selectedIssue.displayLocation.lat, selectedIssue.displayLocation.lng]
+    // Filter issues displayed on the map based on status filter
+    const filteredIssues = displayIssues.filter(issue => 
+        statusFilter ? issue.status === statusFilter : true
+    );
+
+    // Initial center is set to the first issue matching the filter, or first overall, or default Delhi coordinates
+    const initialCenter = filteredIssues.length > 0 
+        ? [filteredIssues[0].location.lat, filteredIssues[0].location.lng]
         : (issues.length > 0 ? [issues[0].location.lat, issues[0].location.lng] : [28.6139, 77.2090]);
 
     if (loading) return (
@@ -212,16 +247,21 @@ const AdminDashboard = () => {
             </div>
 
             {/* Map */}
-            <MapContainer center={mapCenter} zoom={13} style={{ height: "100%", width: "100%" }} zoomControl={false}>
+            <MapContainer center={initialCenter} zoom={13} style={{ height: "100%", width: "100%" }} zoomControl={false}>
                 <TileLayer
                     url="https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png"
                     attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
                 />
-                <MapController center={mapCenter} />
-                {displayIssues.filter(i => i.status !== 'Resolved').map(issue => (
+                <MapController 
+                    selectedLocation={selectedIssue ? selectedIssue.displayLocation : null} 
+                    selectedId={selectedIssueId} 
+                    initialCenter={initialCenter} 
+                />
+                {filteredIssues.map(issue => (
                     <Marker
                         key={issue._id}
                         position={[issue.displayLocation.lat, issue.displayLocation.lng]}
+                        icon={createCustomIcon(issue.status, selectedIssueId === issue._id)}
                         eventHandlers={{
                             click: () => setSelectedIssueId(issue._id),
                         }}

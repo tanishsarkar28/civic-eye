@@ -64,3 +64,8 @@
         @apply px-6 py-3 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-medium shadow-lg hover:shadow-indigo-500/30 transition-all transform hover:-translate-y-0.5 active:translate-y-0;
     }
 }
+
+.custom-div-icon {
+    background: none !important;
+    border: none !important;
+}
